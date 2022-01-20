@@ -1,0 +1,142 @@
+
+import h5py
+import numpy as np
+import matplotlib.pyplot as plt
+from pyproj import Proj
+import glob
+from mpl_toolkits.basemap import Basemap
+import pandas as pd
+import datetime as dt
+
+
+
+
+files = glob.glob('*.HDF5')
+
+
+files_sort = np.argsort(files)
+
+
+
+#Read in file, extract lat, lons, PSD
+
+gpm_coords_file = 'output.csv'
+data_csv = pd.read_csv(gpm_coords_file,usecols = ['gpm_lat','gpm_lon','storm_date', 'storm_lat','storm_lon', 'gpm_date'])
+
+
+
+
+gpm_lat_series = data_csv['gpm_lat'][:]
+gpm_lon_series = data_csv['gpm_lon'][:]
+storm_time = data_csv['storm_date'][:]
+storm_lat_series = data_csv['storm_lat'][:]
+storm_lon_series = data_csv['storm_lon'][:]
+gpm_date = data_csv['gpm_date'][:]
+
+#Convert series to numpy arrays
+
+gpm_lat = pd.Series.to_numpy(gpm_lat_series)
+gpm_lon = pd.Series.to_numpy(gpm_lon_series)
+storm_time_array = pd.Series.to_numpy(storm_time)
+storm_lat = pd.Series.to_numpy(storm_lat_series)
+storm_lon = pd.Series.to_numpy(storm_lon_series)
+gpm_time = pd.to_datetime(gpm_date)
+julian_time = gpm_time.apply(pd.Timestamp.toordinal) + 1721424.5
+#Now we need to read in the start and end times from GPM --> then convert to datetime objects
+
+
+files_qc_order = np.argsort(files)    
+
+
+#Then index the list to reflect this time-ordered list:
+    
+    
+files_ordered = [files[i] for i in files_qc_order]
+
+
+
+#Now let's parse the date out of the file name --> Add to title
+
+
+date_object = []
+
+
+for i in range(len(files_ordered)):
+    
+     period_split = files_ordered[i].split(".")[4]
+     print(period_split)
+     date_object.append(period_split)
+    
+    
+    
+    
+  
+#%%
+
+#Read in the actual DPR files:
+
+for file in range(len(files_ordered)):
+    
+    
+    
+    
+    data = h5py.File(files_ordered[file])
+    #print(file)
+    print(files_ordered[file])
+    #print(gpm_lat_sort[file])
+    #print(gpm_lon_sort[file])
+
+    z_corrected = data['NS']['SLV']['zFactorCorrectedNearSurface'][:]
+  
+
+
+
+
+
+    lat = data['NS']['Latitude'][:]
+    lon = data['NS']['Longitude'][:]
+#Lat and lon corresponding to the DPR overpass locations
+
+    domain_range = 6
+
+
+    z_corrected[z_corrected<20] = np.nan
+
+    cmin = 12.; cmax = 60.; cint = 2.5; clevs = np.round(np.arange(cmin,cmax,cint),2)
+    nlevs = len(clevs) - 1; cmap = plt.get_cmap(name='turbo',lut=nlevs)
+
+    plt.figure(figsize=(20,20))
+    
+    m = Basemap(projection='cyl',lon_0=gpm_lon[file],lat_0=gpm_lat[file],llcrnrlat=gpm_lat[file]-domain_range,urcrnrlat=gpm_lat[file]+domain_range,llcrnrlon=gpm_lon[file]-domain_range,urcrnrlon=gpm_lon[file]+domain_range,resolution='l')
+    m.drawcoastlines(); m.drawstates(), m.drawcountries()
+
+
+    cs = m.contourf(lon,lat,z_corrected,clevs,cmap='turbo',extend='both')
+    cs2 = m.plot(lon[:,0]+0.03,lat[:,0]-0.03,'--k',zorder=1)
+    cs3 = m.plot(lon[:,-1]-0.03,lat[:,-1]+0.03,'--k',zorder=1)
+    
+    parallels = np.arange(-90,90,step = 2)
+    m.drawparallels(parallels, labels = [True, False, False, False])
+
+    meridians = np.arange(0,360, step = 2)
+    m.drawmeridians(meridians, labels = [False, False, False, True])
+
+
+
+
+
+    cbar = m.colorbar(cs,size='2%')
+    cbar.ax.set_ylabel('[dBZ]',name='Calibri',size=18)
+    cticks = []
+    for i in clevs:
+        cticks.append(int(i)) if i.is_integer() else cticks.append(i)
+        cbar.set_ticks(clevs[::4])
+        cbar.set_ticklabels(cticks[::4])
+    for i in cbar.ax.yaxis.get_ticklabels():
+        i.set_family('Calibri')
+        i.set_size(20)
+
+
+
+    plt.title('GPM Overpass KuPR ' + date_object[file], size = 30)
+    plt.show()
