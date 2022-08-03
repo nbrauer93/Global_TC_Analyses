@@ -14,13 +14,20 @@ import h5py
 
 file = '2A.GPM.DPR.V8-20180723.20201028-S075448-E092720.037875.V06A.HDF5'
 
+#Open the file and extract attributes
+
 data = h5py.File(file)
+
+#Latitude and longitude in DPR file
 
 lat = data['NS']['Latitude'][:]
 lon = data['NS']['Longitude'][:]
 
+#Uncomment to import near-surface reflectivity (attenuation-corrected)
+
 #z_corrected = data['NS']['SLV']['zFactorCorrectedNearSurface'][:]
 
+#Latitude and longitude of storm center
 
 storm_lat = 25.1398
 storm_lon = -91.7397
@@ -38,15 +45,13 @@ def distance(x1,y1,x2,y2):
 
 
 
-
 #Reshape DPR lat/lon arrays to 1D space:
     
 I,J = lat.shape
 
 latitude = lat.reshape(I*J, order = 'F')
 longitude = lon.reshape(I*J, order = 'F')    
-#ku = z_corrected.reshape(I*J, order = 'F')
-#ku[ku<10] = np.nan
+
 
 
 #Compute distance from center for all DPR lat/lon points
@@ -59,22 +64,6 @@ for i in range(len(latitude)):
     storm_distance = distance(storm_lon,storm_lat,longitude[i],latitude[i])
     distance_from_center.append(storm_distance)
 
-
-'''
-
-dist = np.arange(10,200,step = 10)
-
-
-fontsize = 20
-plt.plot(dist,kupr)
-plt.xlabel('Distance From Center (km)', size = fontsize)
-plt.ylabel('KuPR (dBZ)', size = fontsize)
-plt.title('Annuli-Averaged GPM DPR KuPR (Hurricane Zeta 10/28/2020)', size = fontsize)
-plt.xticks(size = 18)
-plt.yticks(size = 18)
-plt.show()
-
-'''
 
 #%%
 
