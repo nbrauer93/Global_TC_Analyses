@@ -121,7 +121,6 @@ ku_reshaped[(norm_altitude>-1)|(norm_altitude<-3)] = np.nan
 
 
 #Now compute the linear regression
-#The bug is in here:
 from scipy import stats
 from sklearn.linear_model import LinearRegression
 
@@ -135,7 +134,7 @@ for i in range(ku_reshaped.shape[0]):
         slope_warm.append(np.nan)
         continue
 
-    #Slice all points of ku_reshaped to remove any values l
+    #Slice all points of ku_reshaped to remove any values 
     
     sliced_norm_altitude = norm_altitude[i][(norm_altitude[i] <= -1) & (norm_altitude[i] >= -3)]
     sliced_ku_reshaped = ku_reshaped[i][(norm_altitude[i] <= -1) & (norm_altitude[i] >= -3)]
@@ -149,33 +148,26 @@ for i in range(ku_reshaped.shape[0]):
         
     
     slope = stats.linregress(filtered_ku_reshaped,filtered_norm_altitude)[0]
-    #print(slope)
-    #model = LinearRegression().fit(ku_reshaped[i,:],norm_altitude[i,:])
-    #slope = model.score(ku_reshaped[i,:],norm_altitude[i,:])
     slope_warm.append(slope)
     
    
     
    
+#Change from list to array
 
 slope_warm = np.asarray(slope_warm)
 
+#Flatten out from 1D to 2D
+
 slope_liquid = slope_warm.reshape(I,J, order = 'F')
+
+#All KuPR slopes < -2 | > 2 are likely non-physical; NaN these
 
 slope_liquid[(slope_liquid<-2)| (slope_liquid>2)] = np.nan
 
-
-#%%
-
-
-idxs = np.where(~ku_reshaped.mask)[0]
-for idx in idxs:
-    print(f"index: {idx}, length = {len(ku_reshaped[idx,:])}")
+#%% 
 
 
-
-
-#%%
 #Let's plot on a grid now
 
 from mpl_toolkits.basemap import Basemap
@@ -185,11 +177,13 @@ nlevs = len(clevs) - 1; cmap = plt.get_cmap(name='turbo',lut=nlevs)
 
 plt.figure(figsize=(14,14))
 
+#Spatial domain/grid
 
 xlim = np.array([-94.5,-89]); ylim = np.array([22,28])
 
 
 label_size = 22
+font_size = 20
 
 
 m = Basemap(projection='cyl',lon_0=np.mean(xlim),lat_0=np.mean(ylim),llcrnrlat=ylim[0],urcrnrlat=ylim[1],llcrnrlon=xlim[0],urcrnrlon=xlim[1],resolution='i')
@@ -198,10 +192,10 @@ cs = m.contourf(lon,lat,slope_liquid,clevs,cmap='turbo',extend='both')
 cs2 = m.plot(lon[:,0]+0.03,lat[:,0]-0.03,'--k',zorder=4)
 cs3 = m.plot(lon[:,-1]-0.03,lat[:,-1]+0.03,'--k',zorder=4)
 parallels = np.arange(-90,90,step = 2)
-m.drawparallels(parallels, labels = [True, False, False, False], fontsize = 20)
+m.drawparallels(parallels, labels = [True, False, False, False], fontsize = font_size)
 
 meridians = np.arange(0,360, step = 2)
-m.drawmeridians(meridians, labels = [False, False, False, True], fontsize = 20)
+m.drawmeridians(meridians, labels = [False, False, False, True], fontsize = font_size)
 
 cbar = plt.colorbar(fraction=0.046, pad=0.04)
 cbar.ax.tick_params(labelsize = label_size)
