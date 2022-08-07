@@ -33,37 +33,12 @@ storm_lat = 25.1398
 storm_lon = -91.7397
 
 
-#Now we need to compute annuli based on distance from the storm center in ten km intervals:
-    
-
-def distance(x1,y1,x2,y2):
-
-    dist = np.sqrt(((x2-x1)**2)+(y2-y1)**2) #Returns distance in degrees
-    dist_km = dist*111
-
-    return dist, dist_km
-
-
-
 #Reshape DPR lat/lon arrays to 1D space:
     
 I,J = lat.shape
 
 latitude = lat.reshape(I*J, order = 'F')
 longitude = lon.reshape(I*J, order = 'F')    
-
-
-
-#Compute distance from center for all DPR lat/lon points
-
-distance_from_center = []
-
-for i in range(len(latitude)):
-    
-    
-    storm_distance = distance(storm_lon,storm_lat,longitude[i],latitude[i])
-    distance_from_center.append(storm_distance)
-
 
 #%%
 
